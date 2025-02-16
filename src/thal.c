@@ -73,7 +73,6 @@ static const double ILAS = (-300 / 310.15); /* Internal Loop Entropy ASymmetry c
 static const double ILAH = 0.0; /* Internal Loop EntHalpy Asymmetry correction */
 static const double AT_H = 2200.0; /* AT penalty */
 static const double AT_S = 6.9; /* AT penalty */
-static const double MinEntropyCutoff = -2500.0; /* to filter out non-existing entropies */
 static const double MinEntropy = -3224.0; /* initiation */
 static const double dplx_init_H_dimer = 200;
 static const double dplx_init_S_dimer = -5.7;
@@ -744,29 +743,14 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
 
    for (j = 2; j <= oligo2_len; ++j)
       for (i = j - min_hrpn_loop - 1; i >= 1; --i) {
-         if (isFinite(enthalpyDPT[i][j])) {
-            SH[0] = -1.0;
-            SH[1] = _INFINITY;
+         if (is_complement[numSeq1[i]][numSeq1[j]]) {
             T0 = T1 = -_INFINITY;
             S0 = entropyDPT[i][j];
             H0 = enthalpyDPT[i][j];
             T0 = (H0) /(S0 + RC);
-            if(isFinite(enthalpyDPT[i][j])) {
-               S1 = (entropyDPT[i + 1][j - 1] + stackEntropies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]]);
-               H1 = (enthalpyDPT[i + 1][j - 1] + stackEnthalpies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]]);
-            } else {
-               S1 = -1.0;
-               H1 = _INFINITY;
-            }
+            S1 = (entropyDPT[i + 1][j - 1] + stackEntropies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]]);
+            H1 = (enthalpyDPT[i + 1][j - 1] + stackEnthalpies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]]);
             T1 = (H1) /(S1 + RC);
-            if(S1 < MinEntropyCutoff) {
-               S1 = MinEntropy;
-               H1 = 0.0;
-            }
-            if(S0 < MinEntropyCutoff) {
-               S0 = MinEntropy;
-               H0 = 0.0;
-            }
 
             if(T1 > T0) {
                entropyDPT[i][j] = S1;
@@ -782,13 +766,9 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
                   jj = d + ii;
                   SH[0] = -1.0;
                   SH[1] = _INFINITY;
-                  if (isFinite(enthalpyDPT[ii][jj]) && isFinite(enthalpyDPT[i][j])) {
+                  if (is_complement[numSeq1[ii]][numSeq1[jj]]) {
                      calc_bulge_internal_monomer(i, j, ii, jj, SH, 0, maxLoop, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, numSeq2);
                      if(isFinite(SH[1])) {
-                        if(SH[0] < MinEntropyCutoff) {
-                           SH[0] = MinEntropy;
-                           SH[1] = 0.0;
-                        }
                         enthalpyDPT[i][j] = SH[1];
                         entropyDPT[i][j] = SH[0];
                      }
@@ -799,10 +779,6 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
            SH[1] = _INFINITY;
            calc_hairpin(i, j, SH, 0, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, numSeq2, oligo1_len, oligo2_len);
            if(isFinite(SH[1])) {
-              if(SH[0] < MinEntropyCutoff){ /* to not give dH any value if dS is unreasonable */
-                 SH[0] = MinEntropy;
-                 SH[1] = 0.0;
-              }
               entropyDPT[i][j] = SH[0];
               enthalpyDPT[i][j] = SH[1];
            }
@@ -866,10 +842,6 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
             EntropyEnthalpy[0] += loop->value;
          }
       }
-   }
-   if(!isFinite(EntropyEnthalpy[1])) {
-      EntropyEnthalpy[1] = _INFINITY;
-      EntropyEnthalpy[0] = -1.0;
    }
    if((EntropyEnthalpy[1] > 0) && (EntropyEnthalpy[0] > 0) && ((enthalpyDPT[i][j] <= 0) || (entropyDPT[i][j] <= 0))) { /* if both, S and H are positive */
       EntropyEnthalpy[1] = _INFINITY;
@@ -1022,11 +994,9 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
             T1 = (H) / (S + RC);
             G = H - temp*S;
             if((max_tm < T1) && (G<0.0)) {
-               if(S > MinEntropyCutoff) {
-                  H_max = H;
-                  S_max = S;
-                  max_tm = T1;
-               }
+               H_max = H;
+               S_max = S;
+               max_tm = T1;
             }
          }
 
@@ -1041,11 +1011,9 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
             T1 = (H) / (S + RC);
             G = H - temp*S;
             if((max_tm < T1) && (G<0.0)) {
-               if(S > MinEntropyCutoff) {
-                  H_max = H;
-                  S_max = S;
-                  max_tm = T1;
-               }
+               H_max = H;
+               S_max = S;
+               max_tm = T1;
             }
          }
 
@@ -1060,11 +1028,9 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
             T1 = (H) / (S + RC);
             G = H - temp*S;
             if((max_tm < T1) && (G<0.0)) {
-               if(S > MinEntropyCutoff) {
-                  H_max = H;
-                  S_max = S;
-                  max_tm = T1;
-               }
+               H_max = H;
+               S_max = S;
+               max_tm = T1;
             }
          }
 
@@ -1079,11 +1045,9 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
             T1 = (H) / (S + RC);
             G = H - temp*S;
             if((max_tm < T1) && (G<0.0)) {
-               if(S > MinEntropyCutoff) {
-                  H_max = H;
-                  S_max = S;
-                  max_tm = T1;
-               }
+               H_max = H;
+               S_max = S;
+               max_tm = T1;
             }
          }
       }
@@ -1143,17 +1107,15 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
             if(H <= 0 && S <= 0) {
                T1 = (H) / (S + RC);
                if(max_tm < T1) {
-                  if(S > MinEntropyCutoff) {
-                     if (equal(send5[i], S) && equal(hend5[i], H)){
-                        if (T0 >= 0.0){
-                           push(&stack, k + 1, i, 0, _jmp_buf, o);
-                           push(&stack, k, 0, 1, _jmp_buf, o);
-                        }
-                        else {
-                           push(&stack, k + 1, i, 0, _jmp_buf, o);
-                        }
-                        break;
+                  if (equal(send5[i], S) && equal(hend5[i], H)){
+                     if (T0 >= 0.0){
+                        push(&stack, k + 1, i, 0, _jmp_buf, o);
+                        push(&stack, k, 0, 1, _jmp_buf, o);
                      }
+                     else {
+                        push(&stack, k + 1, i, 0, _jmp_buf, o);
+                     }
+                     break;
                   }
                }
             }
@@ -1167,17 +1129,15 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
             if(H <= 0 && S <= 0) {
                T1 = (H) / (S + RC);
                if(max_tm < T1) {
-                  if(S > MinEntropyCutoff) {
-                     if (equal(send5[i], S) && equal(hend5[i], H)){
-                        if (T0 >= 0.0){
-                           push(&stack, k + 2, i, 0, _jmp_buf, o);
-                           push(&stack, k, 0, 1, _jmp_buf, o);
-                        }
-                        else {
-                           push(&stack, k + 2, i, 0, _jmp_buf, o);
-                        }
-                        break;
+                  if (equal(send5[i], S) && equal(hend5[i], H)){
+                     if (T0 >= 0.0){
+                        push(&stack, k + 2, i, 0, _jmp_buf, o);
+                        push(&stack, k, 0, 1, _jmp_buf, o);
                      }
+                     else {
+                        push(&stack, k + 2, i, 0, _jmp_buf, o);
+                     }
+                     break;
                   }
                }
             }
@@ -1191,17 +1151,15 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
             if(H <= 0 && S <= 0) {
                T1 = (H) / (S + RC);
                if(max_tm < T1) {
-                  if(S > MinEntropyCutoff) {
-                     if (equal(send5[i], S) && equal(hend5[i], H)){
-                        if (T0 >= 0.0){
-                           push(&stack, k + 1, i - 1, 0, _jmp_buf, o);
-                           push(&stack, k, 0, 1, _jmp_buf, o);
-                        }
-                        else {
-                           push(&stack, k + 1, i - 1, 0, _jmp_buf, o);
-                        }
-                        break;
+                  if (equal(send5[i], S) && equal(hend5[i], H)){
+                     if (T0 >= 0.0){
+                        push(&stack, k + 1, i - 1, 0, _jmp_buf, o);
+                        push(&stack, k, 0, 1, _jmp_buf, o);
                      }
+                     else {
+                        push(&stack, k + 1, i - 1, 0, _jmp_buf, o);
+                     }
+                     break;
                   }
                }
             }
@@ -1215,17 +1173,15 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
             if(H <= 0 && S <= 0) {
                T1 = (H) / (S + RC);
                if(max_tm < T1) {
-                  if(S > MinEntropyCutoff) {
-                     if (equal(send5[i], S) && equal(hend5[i], H)){
-                        if (T0 >= 0.0){
-                           push(&stack, k + 2, i - 1, 0, _jmp_buf, o);
-                           push(&stack, k, 0, 1, _jmp_buf, o);
-                        }
-                        else {
-                           push(&stack, k + 2, i - 1, 0, _jmp_buf, o);
-                        }
-                        break;
+                  if (equal(send5[i], S) && equal(hend5[i], H)){
+                     if (T0 >= 0.0){
+                        push(&stack, k + 2, i - 1, 0, _jmp_buf, o);
+                        push(&stack, k, 0, 1, _jmp_buf, o);
                      }
+                     else {
+                        push(&stack, k + 2, i - 1, 0, _jmp_buf, o);
+                     }
+                     break;
                   }
                }
             }
