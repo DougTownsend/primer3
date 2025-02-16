@@ -913,10 +913,6 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
    int i, k;
    send5[0] = send5[1] = -1.0;
    hend5[0] = hend5[1] = _INFINITY;
-   for(i = 2; i<=(oligo1_len); i++) {
-      send5[i] = MinEntropy;
-      hend5[i] = 0;
-   }
 
    double max_tm, S_max, H_max, H, S, T0, T1, G;
    for (i = 2; i <= oligo1_len; i++){
