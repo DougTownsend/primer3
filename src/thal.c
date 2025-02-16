@@ -76,8 +76,6 @@ static const double AT_S = 6.9; /* AT penalty */
 static const double MinEntropy = -3224.0; /* initiation */
 static const double dplx_init_H_dimer = 200;
 static const double dplx_init_S_dimer = -5.7;
-static const double dplx_init_H_monomer = 0.0;
-static const double dplx_init_S_monomer = 0.0;
 const double ABSOLUTE_ZERO = 273.15;
 const double TEMP_KELVIN = 310.15;
 const int MAX_LOOP = 30; /* the maximum size of loop that can be calculated; for larger loops formula must be implemented */
@@ -158,7 +156,7 @@ static void calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, c
                         double RC, const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len, int oligo2_len);
 static void push(struct tracer**, int, int, int, jmp_buf, thal_results*); /* to add elements to struct */
 static void traceback_monomer(int*, int, const double *const *entropyDPT, const double *const *enthalpyDPT, double *send5, double *hend5, double RC,
-                              double dplx_init_S, double dplx_init_H,  const unsigned char *numSeq1, const unsigned char *numSeq2,
+                              const unsigned char *numSeq1, const unsigned char *numSeq2,
                               int oligo1_len, int oligo2_len, jmp_buf, thal_results*);
 
 //=====================================================================================
@@ -360,7 +358,7 @@ thal(const unsigned char *oligo_f,
       o->align_end_2 = (int) ms;
       for (int i = 0; i < oligo1_len; ++i) bp[i] = 0;
       if(isFinite(mh)) {
-        traceback_monomer(bp, a->maxLoop, (const double **)entropyDPT, (const double **)enthalpyDPT, send5, hend5, RC, dplx_init_S_monomer, dplx_init_H_monomer, numSeq1, numSeq2, oligo1_len, oligo2_len, _jmp_buf, o);
+        traceback_monomer(bp, a->maxLoop, (const double **)entropyDPT, (const double **)enthalpyDPT, send5, hend5, RC, numSeq1, numSeq2, oligo1_len, oligo2_len, _jmp_buf, o);
         /* traceback for unimolecular structure */
         o->sec_struct=drawHairpin(bp, mh, ms, mode,a->temp, oligo1, oligo2, saltCorrectS(a->mv,a->dv,a->dntp), oligo1_len, oligo2_len, _jmp_buf, o); /* if mode=THL_FAST or THL_DEBUG_F then return after printing basic therm data */
       } else if((mode != THL_FAST) && (mode != THL_DEBUG_F) && (mode != THL_STRUCT)) {
@@ -1014,7 +1012,7 @@ push(struct tracer** stack, int i, int j, int mtrx, jmp_buf _jmp_buf, thal_resul
 
 static void 
 traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const double *const *enthalpyDPT,
-               double *send5, double *hend5, double RC, double dplx_init_S, double dplx_init_H,
+               double *send5, double *hend5, double RC,
                const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len,
                int oligo2_len, jmp_buf _jmp_buf, thal_results* o) /* traceback for unimolecular structure */
 {
