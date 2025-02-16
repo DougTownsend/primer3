@@ -141,23 +141,22 @@ static void RSH(int i, int j, double* EntropyEnthalpy, double RC, double dplx_in
 //=====================================================================================
 //Functions for hairpin calculation
 //=====================================================================================
-static void initMatrix_monomer(double **entropyDPT, double **enthalpyDPT, const unsigned char *numSeq1, const unsigned char *numSeq2,
-                              int oligo1_len, int oligo2_len); /* initiates thermodynamic parameter tables of entropy and enthalpy for monomer */
+static void initMatrix_monomer(double **entropyDPT, double **enthalpyDPT, const unsigned char *numSeq1,
+                              int oligo1_len); /* initiates thermodynamic parameter tables of entropy and enthalpy for monomer */
  /* calcs thermod values into dynamic progr table (monomer) */
 static void fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, double RC, const unsigned char *numSeq1,
-                              const unsigned char *numSeq2, int oligo1_len, int oligo2_len, thal_results* o);
+                              int oligo1_len, thal_results* o);
 static void calc_bulge_internal_monomer(int ii, int jj, int i, int j, double* EntropyEnthalpy, int traceback, int maxLoop,
                                     const  double *const *entropyDPT, const double *const *enthalpyDPT, double RC,
-                                    const unsigned char *numSeq1, const unsigned char *numSeq2);
+                                    const unsigned char *numSeq1);
 static void calc_terminal_bp(double temp, const double *const *entropyDPT, const double *const *enthalpyDPT, double *send5, double *hend5,
-                              double RC, const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len, int oligo2_len);
+                              double RC, const unsigned char *numSeq1, int oligo1_len);
 /* finds monomer structure that has maximum Tm */
 static void calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double *const *entropyDPT, const double *const *enthalpyDPT,
-                        double RC, const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len, int oligo2_len);
+                        double RC, const unsigned char *numSeq1, int oligo1_len);
 static void push(struct tracer**, int, int, int, jmp_buf, thal_results*); /* to add elements to struct */
 static void traceback_monomer(int*, int, const double *const *entropyDPT, const double *const *enthalpyDPT, double *send5, double *hend5, double RC,
-                              const unsigned char *numSeq1, const unsigned char *numSeq2,
-                              int oligo1_len, int oligo2_len, jmp_buf, thal_results*);
+                              const unsigned char *numSeq1, int oligo1_len, jmp_buf, thal_results*);
 
 //=====================================================================================
 //Functions for drawing secondary structure
@@ -349,16 +348,16 @@ thal(const unsigned char *oligo_f,
       double *hend5 = (double*) safe_malloc((oligo1_len + 1) * sizeof(double), _jmp_buf, o);
       double *send5 = (double*) safe_malloc((oligo1_len + 1) * sizeof(double), _jmp_buf, o);
       int *bp = (int*) safe_calloc(oligo1_len, sizeof(int), _jmp_buf, o);
-      initMatrix_monomer(entropyDPT, enthalpyDPT, numSeq1, numSeq2, oligo1_len, oligo2_len);
-      fillMatrix_monomer(a->maxLoop, entropyDPT, enthalpyDPT, RC, numSeq1, numSeq2, oligo1_len, oligo2_len, o);
-      calc_terminal_bp(a->temp, (const double **)entropyDPT, (const double **)enthalpyDPT, send5, hend5, RC, numSeq1, numSeq2, oligo1_len, oligo2_len);
+      initMatrix_monomer(entropyDPT, enthalpyDPT, numSeq1, oligo1_len);
+      fillMatrix_monomer(a->maxLoop, entropyDPT, enthalpyDPT, RC, numSeq1, oligo1_len, o);
+      calc_terminal_bp(a->temp, (const double **)entropyDPT, (const double **)enthalpyDPT, send5, hend5, RC, numSeq1, oligo1_len);
       mh = hend5[oligo1_len];
       ms = send5[oligo1_len];
       o->align_end_1 = (int) mh;
       o->align_end_2 = (int) ms;
       for (int i = 0; i < oligo1_len; ++i) bp[i] = 0;
       if(isFinite(mh)) {
-        traceback_monomer(bp, a->maxLoop, (const double **)entropyDPT, (const double **)enthalpyDPT, send5, hend5, RC, numSeq1, numSeq2, oligo1_len, oligo2_len, _jmp_buf, o);
+        traceback_monomer(bp, a->maxLoop, (const double **)entropyDPT, (const double **)enthalpyDPT, send5, hend5, RC, numSeq1, oligo1_len, _jmp_buf, o);
         /* traceback for unimolecular structure */
         o->sec_struct=drawHairpin(bp, mh, ms, mode,a->temp, oligo1, oligo2, saltCorrectS(a->mv,a->dv,a->dntp), oligo1_len, oligo2_len, _jmp_buf, o); /* if mode=THL_FAST or THL_DEBUG_F then return after printing basic therm data */
       } else if((mode != THL_FAST) && (mode != THL_DEBUG_F) && (mode != THL_STRUCT)) {
@@ -716,11 +715,11 @@ RSH(int i, int j, double* EntropyEnthalpy, double RC, double dplx_init_S, double
 //=====================================================================================
 
 static void 
-initMatrix_monomer(double **entropyDPT, double **enthalpyDPT, const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len, int oligo2_len)
+initMatrix_monomer(double **entropyDPT, double **enthalpyDPT, const unsigned char *numSeq1, int oligo1_len)
 {
    int i, j;
    for (i = 1; i <= oligo1_len; ++i)
-     for (j = i; j <= oligo2_len; ++j)
+     for (j = i; j <= oligo1_len; ++j)
        if (j - i < min_hrpn_loop + 1 || (is_complement[numSeq1[i]][numSeq1[j]] == 0)) {
           enthalpyDPT[i][j] = _INFINITY;
           entropyDPT[i][j] = -1.0;
@@ -731,7 +730,7 @@ initMatrix_monomer(double **entropyDPT, double **enthalpyDPT, const unsigned cha
 
 }
 static void 
-fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, double RC, const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len, int oligo2_len, thal_results* o)
+fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, double RC, const unsigned char *numSeq1, int oligo1_len, thal_results* o)
 {
    int i, j;
    double SH[2];
@@ -739,12 +738,12 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
    double S1;
    double H1;
 
-   for (j = 2; j <= oligo2_len; ++j)
+   for (j = 2; j <= oligo1_len; ++j)
       for (i = j - min_hrpn_loop - 1; i >= 1; --i) {
          if (is_complement[numSeq1[i]][numSeq1[j]]) {
             T0 = (enthalpyDPT[i][j]) /(entropyDPT[i][j] + RC);
-            S1 = (entropyDPT[i + 1][j - 1] + stackEntropies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]]);
-            H1 = (enthalpyDPT[i + 1][j - 1] + stackEnthalpies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]]);
+            S1 = (entropyDPT[i+1][j-1] + stackEntropies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]]);
+            H1 = (enthalpyDPT[i+1][j-1] + stackEnthalpies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]]);
             T1 = (H1) /(S1 + RC);
 
             if(T1 > T0) {
@@ -759,7 +758,7 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
                   SH[0] = -1.0;
                   SH[1] = _INFINITY;
                   if (is_complement[numSeq1[ii]][numSeq1[jj]]) {
-                     calc_bulge_internal_monomer(i, j, ii, jj, SH, 0, maxLoop, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, numSeq2);
+                     calc_bulge_internal_monomer(i, j, ii, jj, SH, 0, maxLoop, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1);
                      if(isFinite(SH[1])) {
                         enthalpyDPT[i][j] = SH[1];
                         entropyDPT[i][j] = SH[0];
@@ -767,7 +766,7 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
                   }
                }
             }
-           calc_hairpin(i, j, SH, 0, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, numSeq2, oligo1_len, oligo2_len);
+           calc_hairpin(i, j, SH, 0, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, oligo1_len);
            if(isFinite(SH[1])) {
               entropyDPT[i][j] = SH[0];
               enthalpyDPT[i][j] = SH[1];
@@ -777,7 +776,7 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
 }
 
 static void 
-calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double *const *entropyDPT, const double *const *enthalpyDPT, double RC, const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len, int oligo2_len)
+calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double *const *entropyDPT, const double *const *enthalpyDPT, double RC, const unsigned char *numSeq1, int oligo1_len)
 {
    int loopSize = j - i - 1;
    double G1, G2;
@@ -790,13 +789,13 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
       EntropyEnthalpy[1] = _INFINITY;
       return;
    }
-   if (i <= oligo1_len && oligo2_len < j) {
+   if (i <= oligo1_len && oligo1_len < j) {
       EntropyEnthalpy[0] = -1.0;
       EntropyEnthalpy[1] = _INFINITY;
       return;
-   } else if (i > oligo2_len) {
+   } else if (i > oligo1_len) {
       i -= oligo1_len;
-      j -= oligo2_len;
+      j -= oligo1_len;
    }
    if(loopSize <= 30) {
       EntropyEnthalpy[1] = hairpinLoopEnthalpies[loopSize - 1];
@@ -837,7 +836,7 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
       EntropyEnthalpy[1] = _INFINITY;
       EntropyEnthalpy[0] = -1.0;
    }
-   RSH(i, j, SH, RC, 0.0, 0.0, numSeq1, numSeq2);
+   RSH(i, j, SH, RC, 0.0, 0.0, numSeq1, numSeq1);
    G1 = EntropyEnthalpy[1]+SH[1] -TEMP_KELVIN*(EntropyEnthalpy[0]+SH[0]);
    G2 = enthalpyDPT[i][j]+SH[1] -TEMP_KELVIN*(entropyDPT[i][j]+SH[0]);
      if(G2 < G1 && traceback == 0) {
@@ -850,7 +849,7 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
 static void 
 calc_bulge_internal_monomer(int i, int j, int ii, int jj, double* EntropyEnthalpy, int traceback, int maxLoop,
                         const double *const *entropyDPT, const double *const *enthalpyDPT, double RC, 
-                        const unsigned char *numSeq1, const unsigned char *numSeq2)
+                        const unsigned char *numSeq1)
 {
    int loopSize1, loopSize2, loopSize;
    double T1, T2;
@@ -866,27 +865,27 @@ calc_bulge_internal_monomer(int i, int j, int ii, int jj, double* EntropyEnthalp
       if(loopSize2 == 1 || loopSize1 == 1) { /* bulge loop of size one is treated differently
                                               the intervening nn-pair must be added */
          H = bulgeLoopEnthalpies[loopSize] +
-            stackEnthalpies[numSeq1[i]][numSeq1[ii]][numSeq2[j]][numSeq2[jj]];
+            stackEnthalpies[numSeq1[i]][numSeq1[ii]][numSeq1[j]][numSeq1[jj]];
          S = bulgeLoopEntropies[loopSize] +
-            stackEntropies[numSeq1[i]][numSeq1[ii]][numSeq2[j]][numSeq2[jj]];
+            stackEntropies[numSeq1[i]][numSeq1[ii]][numSeq1[j]][numSeq1[jj]];
       } else { /* we have _not_ implemented Jacobson-Stockaymayer equation; the maximum bulgeloop size is 30 */
-         H = bulgeLoopEnthalpies[loopSize] + atpH[numSeq1[i]][numSeq2[j]] + atpH[numSeq1[ii]][numSeq2[jj]];
-         S = bulgeLoopEntropies[loopSize] + atpS[numSeq1[i]][numSeq2[j]] + atpS[numSeq1[ii]][numSeq2[jj]];
+         H = bulgeLoopEnthalpies[loopSize] + atpH[numSeq1[i]][numSeq1[j]] + atpH[numSeq1[ii]][numSeq1[jj]];
+         S = bulgeLoopEntropies[loopSize] + atpS[numSeq1[i]][numSeq1[j]] + atpS[numSeq1[ii]][numSeq1[jj]];
       }
    } /* end of calculating bulges */
    else if (loopSize1 == 1 && loopSize2 == 1) {
       /* mismatch nearest neighbor parameters */
-      S = stackint2Entropies[numSeq1[i]][numSeq1[i+1]][numSeq2[j]][numSeq2[j-1]] +
-        stackint2Entropies[numSeq2[jj]][numSeq2[jj+1]][numSeq1[ii]][numSeq1[ii-1]];
-      H = stackint2Enthalpies[numSeq1[i]][numSeq1[i+1]][numSeq2[j]][numSeq2[j-1]] +
-        stackint2Enthalpies[numSeq2[jj]][numSeq2[jj+1]][numSeq1[ii]][numSeq1[ii-1]];
+      S = stackint2Entropies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] +
+        stackint2Entropies[numSeq1[jj]][numSeq1[jj+1]][numSeq1[ii]][numSeq1[ii-1]];
+      H = stackint2Enthalpies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] +
+        stackint2Enthalpies[numSeq1[jj]][numSeq1[jj+1]][numSeq1[ii]][numSeq1[ii-1]];
    } else { /* only internal loops */
-      if((!is_complement[numSeq1[ii-1]][numSeq2[jj+1]]) && (!is_complement[numSeq1[i+1]][numSeq2[j-1]])){
-         H = interiorLoopEnthalpies[loopSize] + tstack2Enthalpies[numSeq1[i]][numSeq1[i+1]][numSeq2[j]][numSeq2[j-1]] +
-         tstack2Enthalpies[numSeq2[jj]][numSeq2[jj+1]][numSeq1[ii]][numSeq1[ii-1]]
+      if((!is_complement[numSeq1[ii-1]][numSeq1[jj+1]]) && (!is_complement[numSeq1[i+1]][numSeq1[j-1]])){
+         H = interiorLoopEnthalpies[loopSize] + tstack2Enthalpies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] +
+         tstack2Enthalpies[numSeq1[jj]][numSeq1[jj+1]][numSeq1[ii]][numSeq1[ii-1]]
          + (ILAH * abs(loopSize1 - loopSize2));
-         S = interiorLoopEntropies[loopSize] + tstack2Entropies[numSeq1[i]][numSeq1[i+1]][numSeq2[j]][numSeq2[j-1]] +
-         tstack2Entropies[numSeq2[jj]][numSeq2[jj+1]][numSeq1[ii]][numSeq1[ii-1]] + (ILAS * abs(loopSize1 - loopSize2));
+         S = interiorLoopEntropies[loopSize] + tstack2Entropies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] +
+         tstack2Entropies[numSeq1[jj]][numSeq1[jj+1]][numSeq1[ii]][numSeq1[ii-1]] + (ILAS * abs(loopSize1 - loopSize2));
       }
    }
 
@@ -909,7 +908,7 @@ calc_bulge_internal_monomer(int i, int j, int ii, int jj, double* EntropyEnthalp
 
 static void 
 calc_terminal_bp(double temp, const double *const *entropyDPT, const double *const *enthalpyDPT, double *send5, double *hend5, double RC,
-                  const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len, int oligo2_len) { /* compute exterior loop */
+                  const unsigned char *numSeq1, int oligo1_len) { /* compute exterior loop */
    int i, k;
    send5[0] = send5[1] = -1.0;
    hend5[0] = hend5[1] = _INFINITY;
@@ -1009,8 +1008,8 @@ push(struct tracer** stack, int i, int j, int mtrx, jmp_buf _jmp_buf, thal_resul
 static void 
 traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const double *const *enthalpyDPT,
                double *send5, double *hend5, double RC,
-               const unsigned char *numSeq1, const unsigned char *numSeq2, int oligo1_len,
-               int oligo2_len, jmp_buf _jmp_buf, thal_results* o) /* traceback for unimolecular structure */
+               const unsigned char *numSeq1, int oligo1_len,
+               jmp_buf _jmp_buf, thal_results* o) /* traceback for unimolecular structure */
 {
    int i, j;
    i = j = 0;
@@ -1130,9 +1129,9 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
          bp[j - 1] = i;
          SH1[0] = -1.0;
          SH1[1] = _INFINITY;
-         calc_hairpin(i, j, SH1, 1, entropyDPT, enthalpyDPT, RC, numSeq1, numSeq2, oligo1_len, oligo2_len); /* 1 means that we use this method in traceback */
-         if (equal(entropyDPT[i][j], stackEntropies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]] + entropyDPT[i + 1][j - 1]) &&
-             equal(enthalpyDPT[i][j], stackEnthalpies[numSeq2[i]][numSeq2[i+1]][numSeq2[j]][numSeq2[j-1]] + enthalpyDPT[i + 1][j - 1])) {
+         calc_hairpin(i, j, SH1, 1, entropyDPT, enthalpyDPT, RC, numSeq1, oligo1_len); /* 1 means that we use this method in traceback */
+         if (equal(entropyDPT[i][j], stackEntropies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] + entropyDPT[i + 1][j - 1]) &&
+             equal(enthalpyDPT[i][j], stackEnthalpies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] + enthalpyDPT[i + 1][j - 1])) {
             push(&stack, i + 1, j - 1, 0, _jmp_buf, o);
          }
          else if (!equal(entropyDPT[i][j], SH1[0]) || !equal(enthalpyDPT[i][j], SH1[1])) {
@@ -1142,7 +1141,7 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
                  jj = d + ii;
                  EntropyEnthalpy[0] = -1.0;
                  EntropyEnthalpy[1] = _INFINITY;
-                 calc_bulge_internal_monomer(i, j, ii, jj, EntropyEnthalpy, 1, maxLoop, entropyDPT, enthalpyDPT, RC, numSeq1, numSeq2);
+                 calc_bulge_internal_monomer(i, j, ii, jj, EntropyEnthalpy, 1, maxLoop, entropyDPT, enthalpyDPT, RC, numSeq1);
                  if (equal(entropyDPT[i][j], EntropyEnthalpy[0] + entropyDPT[ii][jj]) &&
                      equal(enthalpyDPT[i][j], EntropyEnthalpy[1] + enthalpyDPT[ii][jj])) {
                     push(&stack, ii, jj, 0, _jmp_buf, o);
