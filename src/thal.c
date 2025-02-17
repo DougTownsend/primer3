@@ -152,7 +152,7 @@ static void calc_bulge_internal_monomer(int ii, int jj, int i, int j, double* En
 static void calc_terminal_bp(double temp, const double *const *entropyDPT, const double *const *enthalpyDPT, double *send5, double *hend5,
                               double RC, const unsigned char *numSeq1, int oligo1_len);
 /* finds monomer structure that has maximum Tm */
-static void calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double *const *entropyDPT, const double *const *enthalpyDPT,
+static void calc_hairpin(int i, int j, double* EntropyEnthalpy, const double *const *entropyDPT, const double *const *enthalpyDPT,
                         double RC, const unsigned char *numSeq1, int oligo1_len);
 static void push(struct tracer**, int, int, int, jmp_buf, thal_results*); /* to add elements to struct */
 static void traceback_monomer(int*, int, const double *const *entropyDPT, const double *const *enthalpyDPT, double *send5, double *hend5, double RC,
@@ -766,7 +766,7 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
                   }
                }
             }
-            calc_hairpin(i, j, SH, 0, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, oligo1_len);
+            calc_hairpin(i, j, SH, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, oligo1_len);
             entropyDPT[i][j] = SH[0];
             enthalpyDPT[i][j] = SH[1];
         }
@@ -774,7 +774,7 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
 }
 
 static void 
-calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double *const *entropyDPT, const double *const *enthalpyDPT, double RC, const unsigned char *numSeq1, int oligo1_len)
+calc_hairpin(int i, int j, double* EntropyEnthalpy, const double *const *entropyDPT, const double *const *enthalpyDPT, double RC, const unsigned char *numSeq1, int oligo1_len)
 {
    int loopSize = j - i - 1;
    double G1, G2;
@@ -820,7 +820,7 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
    RSH(i, j, SH, RC, 0.0, 0.0, numSeq1, numSeq1);
    G1 = EntropyEnthalpy[1]+SH[1] -TEMP_KELVIN*(EntropyEnthalpy[0]+SH[0]);
    G2 = enthalpyDPT[i][j]+SH[1] -TEMP_KELVIN*(entropyDPT[i][j]+SH[0]);
-     if(G2 < G1 && traceback == 0) {
+     if(G2 < G1) {
       EntropyEnthalpy[0] = entropyDPT[i][j];
       EntropyEnthalpy[1] = enthalpyDPT[i][j];
    }
@@ -901,71 +901,89 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
       H_max = hend5[i-1];
       for(k = 0; k <= i - min_hrpn_loop - 2; ++k) {
          //END5_1
+         // 5' k+1  k+2  3'
+         // 3'  i   i-1  5'
          T0 = (hend5[k]) /(send5[k] + RC);
-         H = atpH[numSeq1[k + 1]][numSeq1[i]] + enthalpyDPT[k + 1][i];
-         S = atpS[numSeq1[k + 1]][numSeq1[i]] + entropyDPT[k + 1][i];
-         if(T0 >= 0.0) {
-            H += hend5[k];
-            S += send5[k];
-         }
-         if(H <= 0 && S <= 0) {
-            T1 = (H) / (S + RC);
-            G = H - temp*S;
-            if((max_tm < T1) && (G<0.0)) {
-               H_max = H;
-               S_max = S;
-               max_tm = T1;
+         if(is_complement[numSeq1[i-1]][numSeq1[k+2]] && is_complement[numSeq1[i]][numSeq1[k+1]]){
+            H = atpH[numSeq1[k + 1]][numSeq1[i]] + enthalpyDPT[k + 1][i];
+            S = atpS[numSeq1[k + 1]][numSeq1[i]] + entropyDPT[k + 1][i];
+            if(T0 >= 0.0) {
+               H += hend5[k];
+               S += send5[k];
+            }
+            if(H <= 0 && S <= 0) {
+               T1 = (H) / (S + RC);
+               G = H - temp*S;
+               if((max_tm < T1) && (G<0.0)) {
+                  H_max = H;
+                  S_max = S;
+                  max_tm = T1;
+               }
             }
          }
 
          //END5_2
-         H = atpH[numSeq1[k + 2]][numSeq1[i]] + dangleEnthalpies5[numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + enthalpyDPT[k + 2][i];
-         S = atpS[numSeq1[k + 2]][numSeq1[i]] + dangleEntropies5[numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + entropyDPT[k + 2][i];
-         if(T0 >= 0.0) {
-            H += hend5[k];
-            S += send5[k];
-         }
-         if(H <= 0 && S <= 0) {
-            T1 = (H) / (S + RC);
-            G = H - temp*S;
-            if((max_tm < T1) && (G<0.0)) {
-               H_max = H;
-               S_max = S;
-               max_tm = T1;
+         // 5' k+1  k+2       3'
+         // 3'       i   i-1  5' Probably indexing into dangle tables incorrectly
+         if(is_complement[numSeq1[i]][numSeq1[k+2]]){
+            H = atpH[numSeq1[k + 2]][numSeq1[i]] + dangleEnthalpies5[numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + enthalpyDPT[k + 2][i];
+            S = atpS[numSeq1[k + 2]][numSeq1[i]] + dangleEntropies5[numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + entropyDPT[k + 2][i];
+            if(T0 >= 0.0) {
+               H += hend5[k];
+               S += send5[k];
             }
+            if(H <= 0 && S <= 0) {
+               T1 = (H) / (S + RC);
+               G = H - temp*S;
+               if((max_tm < T1) && (G<0.0)) {
+                  H_max = H;
+                  S_max = S;
+                  max_tm = T1;
+               }
+            }  
          }
 
          //END5_3
-         H = atpH[numSeq1[k + 1]][numSeq1[i - 1]] + dangleEnthalpies3[numSeq1[i-1]][numSeq1[i]][numSeq1[k+1]] + enthalpyDPT[k + 1][i - 1];
-         S = atpS[numSeq1[k + 1]][numSeq1[i - 1]] + dangleEntropies3[numSeq1[i-1]][numSeq1[i]][numSeq1[k+1]] + entropyDPT[k + 1][i - 1];
-         if(T0 >= 0.0) {
-            H += hend5[k];
-            S += send5[k];
-         }
-         if(H <= 0 && S <= 0) {
-            T1 = (H) / (S + RC);
-            G = H - temp*S;
-            if((max_tm < T1) && (G<0.0)) {
-               H_max = H;
-               S_max = S;
-               max_tm = T1;
+         // 5'      k+1  k+2  3'
+         // 3'  i   i-1       5' Probably indexing into dangle table incorrectly
+         if(is_complement[numSeq1[i-1]][numSeq1[k+1]]){
+            H = atpH[numSeq1[k + 1]][numSeq1[i - 1]] + dangleEnthalpies3[numSeq1[i-1]][numSeq1[i]][numSeq1[k+1]] + enthalpyDPT[k + 1][i - 1];
+            S = atpS[numSeq1[k + 1]][numSeq1[i - 1]] + dangleEntropies3[numSeq1[i-1]][numSeq1[i]][numSeq1[k+1]] + entropyDPT[k + 1][i - 1];
+            if(T0 >= 0.0) {
+               H += hend5[k];
+               S += send5[k];
+            }
+            if(H <= 0 && S <= 0) {
+               T1 = (H) / (S + RC);
+               G = H - temp*S;
+               if((max_tm < T1) && (G<0.0)) {
+                  H_max = H;
+                  S_max = S;
+                  max_tm = T1;
+               }
             }
          }
 
          //END5_4
-         H =atpH[numSeq1[k + 2]][numSeq1[i - 1]] + tstack2Enthalpies[numSeq1[i-1]][numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + enthalpyDPT[k + 2][i - 1];
-         S =atpS[numSeq1[k + 2]][numSeq1[i - 1]] + tstack2Entropies[numSeq1[i-1]][numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + entropyDPT[k + 2][i - 1];
-         if(T0 >= 0.0) {
-            H += hend5[k];
-            S += send5[k];
-         }
-         if(H <= 0 && S <= 0) {
-            T1 = (H) / (S + RC);
-            G = H - temp*S;
-            if((max_tm < T1) && (G<0.0)) {
-               H_max = H;
-               S_max = S;
-               max_tm = T1;
+         // 5' k+1 
+         //         k+2  3'    OR    5' k+1 k+2 3'
+         //         i-1  5'          3'  i  i-1
+         // 3'  i 
+         if(is_complement[numSeq1[i-1]][numSeq1[k+2]]){
+            H =atpH[numSeq1[k + 2]][numSeq1[i - 1]] + tstack2Enthalpies[numSeq1[i-1]][numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + enthalpyDPT[k + 2][i - 1];
+            S =atpS[numSeq1[k + 2]][numSeq1[i - 1]] + tstack2Entropies[numSeq1[i-1]][numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + entropyDPT[k + 2][i - 1];
+            if(T0 >= 0.0) {
+               H += hend5[k];
+               S += send5[k];
+            }
+            if(H <= 0 && S <= 0) {
+               T1 = (H) / (S + RC);
+               G = H - temp*S;
+               if((max_tm < T1) && (G<0.0)) {
+                  H_max = H;
+                  S_max = S;
+                  max_tm = T1;
+               }
             }
          }
       }
@@ -996,8 +1014,7 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
    i = j = 0;
    int ii, jj, k;
    struct tracer *top, *stack = NULL;
-   double SH1[2];
-   double EntropyEnthalpy[2];
+   double SH[2];
    double T1, H, S, max_tm;
 
    double T0 = -_INFINITY;
@@ -1008,7 +1025,7 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
       i = top->i;
       j = top->j;
       if(top->mtrx==1) {
-         while (equal(send5[i], send5[i - 1]) && equal(hend5[i], hend5[i - 1])) /* if previous structure is the same as this one */
+         while (equal(send5[i], send5[i - 1]) && equal(hend5[i], hend5[i - 1])) //if previous structure is the same as this one 
            --i;
          if (i == 0)
            continue;
@@ -1108,23 +1125,23 @@ traceback_monomer(int* bp, int maxLoop, const double *const *entropyDPT,  const 
       if(top->mtrx==0) {
          bp[i - 1] = j;
          bp[j - 1] = i;
-         SH1[0] = -1.0;
-         SH1[1] = _INFINITY;
-         calc_hairpin(i, j, SH1, 1, entropyDPT, enthalpyDPT, RC, numSeq1, oligo1_len); /* 1 means that we use this method in traceback */
+         SH[0] = -1.0;
+         SH[1] = _INFINITY;
          if (equal(entropyDPT[i][j], stackEntropies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] + entropyDPT[i + 1][j - 1]) &&
              equal(enthalpyDPT[i][j], stackEnthalpies[numSeq1[i]][numSeq1[i+1]][numSeq1[j]][numSeq1[j-1]] + enthalpyDPT[i + 1][j - 1])) {
             push(&stack, i + 1, j - 1, 0, _jmp_buf, o);
          }
-         else if (!equal(entropyDPT[i][j], SH1[0]) || !equal(enthalpyDPT[i][j], SH1[1])) {
+         else{
+            //calc_hairpin(i, j, SH, 1, entropyDPT, enthalpyDPT, RC, numSeq1, oligo1_len); // 1 means that we use this method in traceback
             int d, done;
             for (done = 0, d = j - i - 3; d >= min_hrpn_loop + 1 && d >= j - i - 2 - maxLoop && !done; --d)
               for (ii = i + 1; ii < j - d; ++ii) {
                  jj = d + ii;
-                 EntropyEnthalpy[0] = -1.0;
-                 EntropyEnthalpy[1] = _INFINITY;
-                 calc_bulge_internal_monomer(i, j, ii, jj, EntropyEnthalpy, 1, maxLoop, entropyDPT, enthalpyDPT, RC, numSeq1);
-                 if (equal(entropyDPT[i][j], EntropyEnthalpy[0] + entropyDPT[ii][jj]) &&
-                     equal(enthalpyDPT[i][j], EntropyEnthalpy[1] + enthalpyDPT[ii][jj])) {
+                 SH[0] = -1.0;
+                 SH[1] = _INFINITY;
+                 calc_bulge_internal_monomer(i, j, ii, jj, SH, 1, maxLoop, entropyDPT, enthalpyDPT, RC, numSeq1);
+                 if (equal(entropyDPT[i][j], SH[0] + entropyDPT[ii][jj]) &&
+                     equal(enthalpyDPT[i][j], SH[1] + enthalpyDPT[ii][jj])) {
                     push(&stack, ii, jj, 0, _jmp_buf, o);
                     ++done;
                     break;
