@@ -766,11 +766,9 @@ fillMatrix_monomer(int maxLoop, double **entropyDPT, double **enthalpyDPT, doubl
                   }
                }
             }
-           calc_hairpin(i, j, SH, 0, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, oligo1_len);
-           if(isFinite(SH[1])) {
-              entropyDPT[i][j] = SH[0];
-              enthalpyDPT[i][j] = SH[1];
-           }
+            calc_hairpin(i, j, SH, 0, (const double **)entropyDPT, (const double **)enthalpyDPT, RC, numSeq1, oligo1_len);
+            entropyDPT[i][j] = SH[0];
+            enthalpyDPT[i][j] = SH[1];
         }
      }
 }
