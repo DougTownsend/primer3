@@ -784,19 +784,7 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
    double SH[2];
    SH[0] = -1.0;
    SH[1] = _INFINITY;
-   if(loopSize < min_hrpn_loop) {
-      EntropyEnthalpy[0] = -1.0;
-      EntropyEnthalpy[1] = _INFINITY;
-      return;
-   }
-   if (i <= oligo1_len && oligo1_len < j) {
-      EntropyEnthalpy[0] = -1.0;
-      EntropyEnthalpy[1] = _INFINITY;
-      return;
-   } else if (i > oligo1_len) {
-      i -= oligo1_len;
-      j -= oligo1_len;
-   }
+
    if(loopSize <= 30) {
       EntropyEnthalpy[1] = hairpinLoopEnthalpies[loopSize - 1];
       EntropyEnthalpy[0] = hairpinLoopEntropies[loopSize - 1];
@@ -808,12 +796,20 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
    if (loopSize > 3) { /* for loops 4 bp and more in length, terminal mm are accounted */
       EntropyEnthalpy[1] += tstack2Enthalpies[numSeq1[i]][numSeq1[i + 1]][numSeq1[j]][numSeq1[j - 1]];
       EntropyEnthalpy[0] += tstack2Entropies[numSeq1[i]][numSeq1[i + 1]][numSeq1[j]][numSeq1[j - 1]];
+      if (loopSize == 4) { /* terminal mismatch, tetraloop bonus, hairpin of 4 */
+         struct tetraloop* loop;
+         if (numTetraloops) {
+            if ((loop = (struct tetraloop*) bsearch(numSeq1 + i, tetraloopEnthalpies, numTetraloops, sizeof(struct tetraloop), comp4loop))) {
+               EntropyEnthalpy[1] += loop->value;
+            }
+            if ((loop = (struct tetraloop*) bsearch(numSeq1 + i, tetraloopEntropies, numTetraloops, sizeof(struct tetraloop), comp4loop))) {
+               EntropyEnthalpy[0] += loop->value;
+            }
+         }
+      }
    } else if(loopSize == 3){ /* for loops 3 bp in length at-penalty is considered */
       EntropyEnthalpy[1] += atpH[numSeq1[i]][numSeq1[j]];
       EntropyEnthalpy[0] += atpS[numSeq1[i]][numSeq1[j]];
-   }
-
-   if (loopSize == 3) {         /* closing AT-penalty (+), triloop bonus, hairpin of 3 (+) */
       struct triloop* loop;
       if (numTriloops) {
          if ((loop = (struct triloop*) bsearch(numSeq1 + i, triloopEnthalpies, numTriloops, sizeof(struct triloop), comp3loop)))
@@ -821,21 +817,8 @@ calc_hairpin(int i, int j, double* EntropyEnthalpy, int traceback, const double 
          if ((loop = (struct triloop*) bsearch(numSeq1 + i, triloopEntropies, numTriloops, sizeof(struct triloop), comp3loop)))
            EntropyEnthalpy[0] += loop->value;
       }
-   } else if (loopSize == 4) { /* terminal mismatch, tetraloop bonus, hairpin of 4 */
-      struct tetraloop* loop;
-      if (numTetraloops) {
-         if ((loop = (struct tetraloop*) bsearch(numSeq1 + i, tetraloopEnthalpies, numTetraloops, sizeof(struct tetraloop), comp4loop))) {
-            EntropyEnthalpy[1] += loop->value;
-         }
-         if ((loop = (struct tetraloop*) bsearch(numSeq1 + i, tetraloopEntropies, numTetraloops, sizeof(struct tetraloop), comp4loop))) {
-            EntropyEnthalpy[0] += loop->value;
-         }
-      }
    }
-   if((EntropyEnthalpy[1] > 0) && (EntropyEnthalpy[0] > 0) && ((enthalpyDPT[i][j] <= 0) || (entropyDPT[i][j] <= 0))) { /* if both, S and H are positive */
-      EntropyEnthalpy[1] = _INFINITY;
-      EntropyEnthalpy[0] = -1.0;
-   }
+
    RSH(i, j, SH, RC, 0.0, 0.0, numSeq1, numSeq1);
    G1 = EntropyEnthalpy[1]+SH[1] -TEMP_KELVIN*(EntropyEnthalpy[0]+SH[0]);
    G2 = enthalpyDPT[i][j]+SH[1] -TEMP_KELVIN*(entropyDPT[i][j]+SH[0]);
