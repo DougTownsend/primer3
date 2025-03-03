@@ -107,12 +107,6 @@ struct tracer /* structure for traceback_monomer - unimolecular str */ {
   struct tracer* next;
 };
 
-//Used for traceback matrix
-struct vec2{
-   int i;
-   int j;
-};
-
 struct dpt_entry{
    double h;
    double s;
@@ -196,8 +190,6 @@ static void* safe_malloc(size_t, jmp_buf, thal_results* o);
 static void* safe_realloc(void*, size_t, jmp_buf, thal_results* o);
 struct dpt_entry **allocate_DPT(int oligo1_len, int oligo2_len, jmp_buf _jmp_buf, thal_results *o);
 void free_DPT(struct dpt_entry **dpt);
-struct vec2 **allocate_traceback_matrix(int len1, int len2, jmp_buf __jmp_buf, thal_results *o);
-void free_traceback_matrix(struct vec2 **tb_mat);
 
 //=====================================================================================
 //Functions for string manipulation
@@ -1787,25 +1779,6 @@ struct dpt_entry **allocate_DPT(int oligo1_len, int oligo2_len, jmp_buf _jmp_buf
 void free_DPT(struct dpt_entry **dpt){
    free(dpt[0]);
    free(dpt);
-}
-
-//Traceback matrix tracks the indices of the last complementary pair used in filling in the DPTs
-struct vec2 **allocate_traceback_matrix(int len1, int len2, jmp_buf __jmp_buf, thal_results *o){
-   struct vec2 *tb = (struct vec2 *)safe_malloc(sizeof(struct vec2) * (len1 + 1) * (len2 + 1), __jmp_buf, o);
-   struct vec2 **rows = (struct vec2 **)safe_malloc(sizeof(struct vec2 *) * (len1 + 1), __jmp_buf, o);
-   for(int i = 0; i < len1 + 1; i++){
-      rows[i] = &tb[i * (len2 + 1)];
-   }
-   for(int i = 0; i < (len1 + 1) * (len2 + 1); i++){
-      tb[i].i = -1;
-      tb[i].j = -1;
-   }
-   return rows;
-}
-
-void free_traceback_matrix(struct vec2 **tb_mat){
-   free(tb_mat[0]);
-   free(tb_mat);
 }
 
 //=====================================================================================
