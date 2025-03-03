@@ -924,7 +924,7 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
 
          //END5_2
          // 5' k+1  k+2       3'
-         // 3'       i   i-1  5' Probably indexing into dangle tables incorrectly
+         // 3'       i   i-1  5' Mixing up dangle5 and dangle3 tables
          if(is_complement[numSeq1[i]][numSeq1[k+2]]){
             H = atpH[numSeq1[k + 2]][numSeq1[i]] + dangleEnthalpies5[numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + enthalpyDPT[k + 2][i];
             S = atpS[numSeq1[k + 2]][numSeq1[i]] + dangleEntropies5[numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + entropyDPT[k + 2][i];
@@ -945,7 +945,7 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
 
          //END5_3
          // 5'      k+1  k+2  3'
-         // 3'  i   i-1       5' Probably indexing into dangle table incorrectly
+         // 3'  i   i-1       5' Mixing up dangle5 and dangle3 tables
          if(is_complement[numSeq1[i-1]][numSeq1[k+1]]){
             H = atpH[numSeq1[k + 1]][numSeq1[i - 1]] + dangleEnthalpies3[numSeq1[i-1]][numSeq1[i]][numSeq1[k+1]] + enthalpyDPT[k + 1][i - 1];
             S = atpS[numSeq1[k + 1]][numSeq1[i - 1]] + dangleEntropies3[numSeq1[i-1]][numSeq1[i]][numSeq1[k+1]] + entropyDPT[k + 1][i - 1];
@@ -967,8 +967,8 @@ calc_terminal_bp(double temp, const double *const *entropyDPT, const double *con
          //END5_4
          // 5' k+1 
          //         k+2  3'    OR    5' k+1 k+2 3'
-         //         i-1  5'          3'  i  i-1
-         // 3'  i 
+         //         i-1  5'          3'  i  i-1 5' Probably should not consider the case where k+1 and i are complementary.
+         // 3'  i                                  In that case, k+1 and i should be the terminal bp instead.
          if(is_complement[numSeq1[i-1]][numSeq1[k+2]]){
             H =atpH[numSeq1[k + 2]][numSeq1[i - 1]] + tstack2Enthalpies[numSeq1[i-1]][numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + enthalpyDPT[k + 2][i - 1];
             S =atpS[numSeq1[k + 2]][numSeq1[i - 1]] + tstack2Entropies[numSeq1[i-1]][numSeq1[i]][numSeq1[k+2]][numSeq1[k+1]] + entropyDPT[k + 2][i - 1];
