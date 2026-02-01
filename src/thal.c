@@ -52,7 +52,6 @@
 
 #include "thal.h"
 #include "thal_default_params.h"
-#include "thal_reverse_engineer.c"
 
 #define STR(X) #X
 #define LONG_SEQ_ERR_STR(MAX_LEN) "Target sequence length > maximum allowed (" STR(MAX_LEN) ") in thermodynamic alignment"
@@ -108,14 +107,12 @@ struct tracer /* structure for traceback_monomer - unimolecular str */ {
   struct tracer* next;
 };
 
-#ifndef REVERSE
 struct dpt_entry{
    double h;
    double s;
    int tb_i; //traceback i
    int tb_j; //traceback j
 };
-#endif
 /*** END STRUCTs ***/
 
 
