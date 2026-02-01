@@ -56,7 +56,7 @@ AR         = ar
 CC         = gcc
 CXX        = g++
 O_OPTS     = -O2
-CC_OPTS    = -g -Wall -march=native
+CC_OPTS    = -g -Wall
 P_DEFINES  =
 
 CFLAGS  = $(CC_OPTS) $(O_OPTS)
