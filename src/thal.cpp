@@ -846,7 +846,7 @@ drawDimer(int* ps1, int* ps2, double H, double S, const thal_mode mode, double t
 
      /* Create the align tics */
      strcpy(ret_str[1], "     ");
-     for (i = 0 ; i < strlen(duplex[1]) ; i++) {
+     for (i = 0 ; i < (int) strlen(duplex[1]) ; i++) {
        if (duplex[1][i] == 'A' || duplex[1][i] == 'T' || 
            duplex[1][i] == 'C' || duplex[1][i] == 'G' ) {
          ret_str[1][i + 3] = '|';

@@ -1,0 +1,8 @@
+seed=0xDEADBEEF
+n_pairs=500000
+len=20
+valid=500000
+dG_checksum=-1555702172.054000
+dG_min=-12905.457972
+dG_max=1040.217004
+dG_mean=-3111.404344
