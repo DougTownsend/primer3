@@ -1,0 +1,4 @@
+Pairs:        500000 (length 20, seed 0xDEADBEEF)
+Valid:        500000
+Total time:   38.7839 s
+Per pair:     77.57 us
