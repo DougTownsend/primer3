@@ -85,7 +85,6 @@ typedef enum thal_alignment_type {
   thal_any = 1,
   thal_end1 = 2,
   thal_end2 = 3,
-  thal_hairpin = 4,
 } thal_alignment_type;
 
 /* Structure for passing arguments to THermodynamic ALignment calculation */
@@ -93,8 +92,7 @@ typedef struct {
    thal_alignment_type type; /* one of the
               1 THAL_ANY, (by default)
               2 THAL_END1,
-              3 THAL_END2,
-              4 THAL_HAIRPIN */
+              3 THAL_END2 */
    int maxLoop;  /* maximum size of loop to consider; longer than 30 bp are not allowed */
    double mv; /* concentration of monovalent cations */
    double dv; /* concentration of divalent cations */

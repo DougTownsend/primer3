@@ -6,7 +6,7 @@
 
 # Compiled Static libraries
 *.a
-
+todo.md
 # Executables
 src/long_seq_tm_test
 src/ntdpal
