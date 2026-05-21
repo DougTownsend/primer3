@@ -167,22 +167,22 @@ dangle5_dh = dangle5_dh.flatten()
 
 
 matricies_5_5_5_5 = []
-matricies_5_5_5_5.append(["static double stackEntropies[5][5][5][5]", stack_ds])
-matricies_5_5_5_5.append(["static double stackEnthalpies[5][5][5][5]", stack_dh])
-matricies_5_5_5_5.append(["static double stackint2Entropies[5][5][5][5]", stackmm_ds])
-matricies_5_5_5_5.append(["static double stackint2Enthalpies[5][5][5][5]", stackmm_dh])
-matricies_5_5_5_5.append(["static double tstackEntropies[5][5][5][5]", tstack_ds])
-matricies_5_5_5_5.append(["static double tstackEnthalpies[5][5][5][5]", tstack_dh])
-matricies_5_5_5_5.append(["static double tstack2Entropies[5][5][5][5]", tstack2_ds])
-matricies_5_5_5_5.append(["static double tstack2Enthalpies[5][5][5][5]", tstack2_dh])
+matricies_5_5_5_5.append(["double stackEntropies[5][5][5][5]", stack_ds])
+matricies_5_5_5_5.append(["double stackEnthalpies[5][5][5][5]", stack_dh])
+matricies_5_5_5_5.append(["double stackint2Entropies[5][5][5][5]", stackmm_ds])
+matricies_5_5_5_5.append(["double stackint2Enthalpies[5][5][5][5]", stackmm_dh])
+matricies_5_5_5_5.append(["double tstackEntropies[5][5][5][5]", tstack_ds])
+matricies_5_5_5_5.append(["double tstackEnthalpies[5][5][5][5]", tstack_dh])
+matricies_5_5_5_5.append(["double tstack2Entropies[5][5][5][5]", tstack2_ds])
+matricies_5_5_5_5.append(["double tstack2Enthalpies[5][5][5][5]", tstack2_dh])
 
 matricies_5_5_5 = []
-matricies_5_5_5.append(["static double dangleEntropies3[5][5][5]", dangle3_ds])
-matricies_5_5_5.append(["static double dangleEnthalpies3[5][5][5]", dangle3_dh])
-matricies_5_5_5.append(["static double dangleEntropies5[5][5][5]", dangle5_ds])
-matricies_5_5_5.append(["static double dangleEnthalpies5[5][5][5]", dangle5_dh])
+matricies_5_5_5.append(["double dangleEntropies3[5][5][5]", dangle3_ds])
+matricies_5_5_5.append(["double dangleEnthalpies3[5][5][5]", dangle3_dh])
+matricies_5_5_5.append(["double dangleEntropies5[5][5][5]", dangle5_ds])
+matricies_5_5_5.append(["double dangleEnthalpies5[5][5][5]", dangle5_dh])
 
-outstr += "static double atpS[5][5] = {"
+outstr += "double atpS[5][5] = {"
 for i in range(5):
     outstr += "\n\t{"
     for j in range(5):
@@ -197,7 +197,7 @@ for i in range(5):
         outstr += ","
 outstr += "};\n\n"
 
-outstr += "static double atpH[5][5] = {"
+outstr += "double atpH[5][5] = {"
 for i in range(5):
     outstr += "\n\t{"
     for j in range(5):
@@ -285,12 +285,12 @@ for line in loops_ds_values:
     hairpin_loop_ds[idx] = float(values[3])
 
 loops_30 = []
-loops_30.append(["static double interiorLoopEntropies[30]", interior_loop_ds])
-loops_30.append(["static double interiorLoopEnthalpies[30]", interior_loop_dh])
-loops_30.append(["static double bulgeLoopEntropies[30]", bulge_loop_ds])
-loops_30.append(["static double bulgeLoopEnthalpies[30]", bulge_loop_dh])
-loops_30.append(["static double hairpinLoopEntropies[30]", hairpin_loop_ds])
-loops_30.append(["static double hairpinLoopEnthalpies[30]", hairpin_loop_dh])
+loops_30.append(["double interiorLoopEntropies[30]", interior_loop_ds])
+loops_30.append(["double interiorLoopEnthalpies[30]", interior_loop_dh])
+loops_30.append(["double bulgeLoopEntropies[30]", bulge_loop_ds])
+loops_30.append(["double bulgeLoopEnthalpies[30]", bulge_loop_dh])
+loops_30.append(["double hairpinLoopEntropies[30]", hairpin_loop_ds])
+loops_30.append(["double hairpinLoopEnthalpies[30]", hairpin_loop_dh])
 
 for loop in loops_30:
     outstr += loop[0] + " = {"
@@ -305,12 +305,12 @@ for loop in loops_30:
             outstr += ", "
     outstr += "};\n\n"
 
-outstr += f"static int numTriloops = {len(triloop_dh_values)};\n"
-outstr += f"static int numTetraloops = {len(tetraloop_dh_values)};\n"
+outstr += f"int numTriloops = {len(triloop_dh_values)};\n"
+outstr += f"int numTetraloops = {len(tetraloop_dh_values)};\n"
 
 bases = ['A', 'C', 'G', 'T']
 
-outstr += "static struct triloop defaultTriloopEntropies[] = {\n"
+outstr += "struct triloop defaultTriloopEntropies[] = {\n"
 for i in range(len(triloop_ds_values)):
     line = triloop_ds_values[i].split("\t")
     outstr += "\t{{"
@@ -325,7 +325,7 @@ for i in range(len(triloop_ds_values)):
         outstr += "};\n"
     outstr += "\n"
 
-outstr += "static struct triloop defaultTriloopEnthalpies[] = {\n"
+outstr += "struct triloop defaultTriloopEnthalpies[] = {\n"
 for i in range(len(triloop_dh_values)):
     line = triloop_dh_values[i].split("\t")
     outstr += "\t{{"
@@ -340,7 +340,7 @@ for i in range(len(triloop_dh_values)):
         outstr += "};\n"
     outstr += "\n"
 
-outstr += "static struct tetraloop defaultTetraloopEntropies[] = {\n"
+outstr += "struct tetraloop defaultTetraloopEntropies[] = {\n"
 for i in range(len(tetraloop_ds_values)):
     line = tetraloop_ds_values[i].split("\t")
     outstr += "\t{{"
@@ -355,7 +355,7 @@ for i in range(len(tetraloop_ds_values)):
         outstr += "};\n"
     outstr += "\n"
 
-outstr += "static struct tetraloop defaultTetraloopEnthalpies[] = {\n"
+outstr += "struct tetraloop defaultTetraloopEnthalpies[] = {\n"
 for i in range(len(tetraloop_dh_values)):
     line = tetraloop_dh_values[i].split("\t")
     outstr += "\t{{"
@@ -370,10 +370,10 @@ for i in range(len(tetraloop_dh_values)):
         outstr += "};\n"
     outstr += "\n"
 
-outstr += "static struct triloop *triloopEntropies = defaultTriloopEntropies;\n"
-outstr += "static struct triloop *triloopEnthalpies = defaultTriloopEnthalpies;\n"
-outstr += "static struct tetraloop *tetraloopEntropies = defaultTetraloopEntropies;\n"
-outstr += "static struct tetraloop *tetraloopEnthalpies = defaultTetraloopEnthalpies;\n"
+outstr += "struct triloop *triloopEntropies = defaultTriloopEntropies;\n"
+outstr += "struct triloop *triloopEnthalpies = defaultTriloopEnthalpies;\n"
+outstr += "struct tetraloop *tetraloopEntropies = defaultTetraloopEntropies;\n"
+outstr += "struct tetraloop *tetraloopEnthalpies = defaultTetraloopEnthalpies;\n"
 
 comment_str = """/*
 This file is created by thal_default_params_create.py. Modify that script, not this file.
@@ -382,32 +382,32 @@ run "python3 thal_default_params_create.py" to regenerate this file.
 
 Globals initialize in this file:
 const double _INFINITY;
-static double atpS[5][5]; AT penalty 
-static double atpH[5][5];  AT penalty 
-static int numTriloops;  hairpin triloop penalties 
-static int numTetraloops;  hairpin tetraloop penalties 
-static double dangleEntropies3[5][5][5]; thermodynamic paramteres for 3' dangling ends 
-static double dangleEnthalpies3[5][5][5];  ther params for 3' dangling ends 
-static double dangleEntropies5[5][5][5];   ther params for 5' dangling ends 
-static double dangleEnthalpies5[5][5][5];  ther params for 5' dangling ends 
-static double stackEntropies[5][5][5][5];  ther params for perfect match pairs 
-static double stackEnthalpies[5][5][5][5];  ther params for perfect match pairs 
-static double stackint2Entropies[5][5][5][5]; ther params for perfect match and internal mm 
-static double stackint2Enthalpies[5][5][5][5];  ther params for perfect match and internal mm
-static double interiorLoopEntropies[30];  interior loop params according to length of the loop 
-static double bulgeLoopEntropies[30];  bulge loop params according to length of the loop 
-static double hairpinLoopEntropies[30];  hairpin loop params accordint to length of the loop 
-static double interiorLoopEnthalpies[30];  same as interiorLoopEntropies but values of entropy 
-static double bulgeLoopEnthalpies[30];  same as bulgeLoopEntropies but values of entropy 
-static double hairpinLoopEnthalpies[30];  same as hairpinLoopEntropies but values of entropy 
-static double tstackEntropies[5][5][5][5];  ther params for terminal mismatches 
-static double tstackEnthalpies[5][5][5][5];  ther params for terminal mismatches 
-static double tstack2Entropies[5][5][5][5];  ther params for internal terminal mismatches 
-static double tstack2Enthalpies[5][5][5][5];  ther params for internal terminal mismatches 
-static struct triloop* triloopEntropies;  ther penalties for given triloop seq-s 
-static struct triloop* triloopEnthalpies;  ther penalties for given triloop seq-s 
-static struct tetraloop* tetraloopEntropies;  ther penalties for given tetraloop seq-s 
-static struct tetraloop* tetraloopEnthalpies;  ther penalties for given tetraloop seq-s 
+double atpS[5][5]; AT penalty 
+double atpH[5][5];  AT penalty 
+int numTriloops;  hairpin triloop penalties 
+int numTetraloops;  hairpin tetraloop penalties 
+double dangleEntropies3[5][5][5]; thermodynamic paramteres for 3' dangling ends 
+double dangleEnthalpies3[5][5][5];  ther params for 3' dangling ends 
+double dangleEntropies5[5][5][5];   ther params for 5' dangling ends 
+double dangleEnthalpies5[5][5][5];  ther params for 5' dangling ends 
+double stackEntropies[5][5][5][5];  ther params for perfect match pairs 
+double stackEnthalpies[5][5][5][5];  ther params for perfect match pairs 
+double stackint2Entropies[5][5][5][5]; ther params for perfect match and internal mm 
+double stackint2Enthalpies[5][5][5][5];  ther params for perfect match and internal mm
+double interiorLoopEntropies[30];  interior loop params according to length of the loop 
+double bulgeLoopEntropies[30];  bulge loop params according to length of the loop 
+double hairpinLoopEntropies[30];  hairpin loop params accordint to length of the loop 
+double interiorLoopEnthalpies[30];  same as interiorLoopEntropies but values of entropy 
+double bulgeLoopEnthalpies[30];  same as bulgeLoopEntropies but values of entropy 
+double hairpinLoopEnthalpies[30];  same as hairpinLoopEntropies but values of entropy 
+double tstackEntropies[5][5][5][5];  ther params for terminal mismatches 
+double tstackEnthalpies[5][5][5][5];  ther params for terminal mismatches 
+double tstack2Entropies[5][5][5][5];  ther params for internal terminal mismatches 
+double tstack2Enthalpies[5][5][5][5];  ther params for internal terminal mismatches 
+struct triloop* triloopEntropies;  ther penalties for given triloop seq-s 
+struct triloop* triloopEnthalpies;  ther penalties for given triloop seq-s 
+struct tetraloop* tetraloopEntropies;  ther penalties for given tetraloop seq-s 
+struct tetraloop* tetraloopEnthalpies;  ther penalties for given tetraloop seq-s 
 */\n\n"""
 
 outfile = open("thal_default_params.h", "w+")

@@ -167,12 +167,12 @@ $(LIBDPAL): dpal_primer.o
 $(LIBDPAL_DYN): dpal_primer.o
 	$(CC) -shared -W1,-soname,libdpal.so.1 -o $(LIBDPAL_DYN_LIB) dpal_primer.o
 
-$(LIBTHAL): thal_primer.o
-	$(AR) rv $@ thal_primer.o
+$(LIBTHAL): thal_primer.o thal_trace_primer.o thal_draw_primer.o thal_params_primer.o thal_util_primer.o
+	$(AR) rv $@ thal_primer.o thal_trace_primer.o thal_draw_primer.o thal_params_primer.o thal_util_primer.o
 	$(RANLIB) $@
 
-$(LIBTHAL_DYN): thal_primer.o
-	$(CC) -shared -W1,-soname,libthal.so.1 -o $(LIBTHAL_DYN_LIB) thal_primer.o
+$(LIBTHAL_DYN): thal_primer.o thal_trace_primer.o thal_draw_primer.o thal_params_primer.o thal_util_primer.o
+	$(CC) -shared -W1,-soname,libthal.so.1 -o $(LIBTHAL_DYN_LIB) thal_primer.o thal_trace_primer.o thal_draw_primer.o thal_params_primer.o thal_util_primer.o
 
 $(LIBPRIMER3): libprimer3.o p3_seq_lib.o
 	$(AR) rv $@ libprimer3.o p3_seq_lib.o
@@ -197,8 +197,8 @@ libprimer3.o: libprimer3.cc libprimer3.h p3_seq_lib.h dpal.h thal.h oligotm.h th
 $(NTDPAL_EXE): ntdpal_main.o dpal.o
 	$(CC) $(LDFLAGS) -o $@ ntdpal_main.o dpal.o
 
-$(NTTHAL_EXE): thal_main.o thal.o 
-	$(CC) $(LDFLAGS) -o $@ thal_main.o thal.o $(LDLIBS)
+$(NTTHAL_EXE): thal_main.o thal.o thal_trace.o thal_draw.o thal_params.o thal_util.o
+	$(CC) $(LDFLAGS) -o $@ thal_main.o thal.o thal_trace.o thal_draw.o thal_params.o thal_util.o $(LDLIBS)
 
 $(OLIGOTM_EXE): oligotm_main.c oligotm.h $(LIBOLIGOTM)
 	$(CC) $(CFLAGS) -o $@ oligotm_main.c $(LIBOLIGOTM) $(LIBOPTS) $(LDLIBS)
@@ -223,8 +223,32 @@ dpal.o: dpal.c dpal.h
 
 # We use '-ffloat-store' on windows to prevent undesirable
 # precision which may lead to differences in floating point results.
-thal.o: thal.c thal.h thal_default_params.h
+thal.o: thal.c thal.h thal_internal.h
 	$(CC) -c $(CFLAGS) -ffloat-store -o $@ thal.c
+
+thal_trace.o: thal_trace.c thal_internal.h
+	$(CC) -c $(CFLAGS) -o $@ thal_trace.c
+
+thal_trace_primer.o: thal_trace.c thal_internal.h
+	$(CC) -c $(CFLAGS) $(P_DEFINES) -o $@ thal_trace.c
+
+thal_draw.o: thal_draw.c thal_internal.h
+	$(CC) -c $(CFLAGS) -o $@ thal_draw.c
+
+thal_draw_primer.o: thal_draw.c thal_internal.h
+	$(CC) -c $(CFLAGS) $(P_DEFINES) -o $@ thal_draw.c
+
+thal_params.o: thal_params.c thal_internal.h thal_default_params.h
+	$(CC) -c $(CFLAGS) -o $@ thal_params.c
+
+thal_params_primer.o: thal_params.c thal_internal.h thal_default_params.h
+	$(CC) -c $(CFLAGS) $(P_DEFINES) -o $@ thal_params.c
+
+thal_util.o: thal_util.c thal_internal.h
+	$(CC) -c $(CFLAGS) -o $@ thal_util.c
+
+thal_util_primer.o: thal_util.c thal_internal.h
+	$(CC) -c $(CFLAGS) $(P_DEFINES) -o $@ thal_util.c
 
 p3_seq_lib.o: p3_seq_lib.c p3_seq_lib.h libprimer3.h
 	$(CC) -c $(CFLAGS) -o $@ p3_seq_lib.c
@@ -232,7 +256,7 @@ p3_seq_lib.o: p3_seq_lib.c p3_seq_lib.h libprimer3.h
 dpal_primer.o: dpal.c dpal.h
 	$(CC) -c $(CFLAGS) $(P_DEFINES) -o $@ dpal.c
 
-thal_primer.o: thal.c thal.h thal_default_params.h
+thal_primer.o: thal.c thal.h thal_internal.h
 	$(CC) -c $(CFLAGS) -ffloat-store $(P_DEFINES) -o $@ thal.c
 
 format_output.o: format_output.c format_output.h libprimer3.h dpal.h thal.h p3_seq_lib.h thal_default_params.h
